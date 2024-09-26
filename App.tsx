@@ -11,7 +11,7 @@ export const App = () => {
   return (
     <NavigationContainer>
     <PaperProvider>
-<StackNavigator/>    
+<StackNavigator/>  
 </PaperProvider>
 </NavigationContainer>
   )
