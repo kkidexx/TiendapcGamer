@@ -1,4 +1,5 @@
 import { StyleSheet } from "react-native";
+import { Icon } from "react-native-paper";
 
 export const styles=StyleSheet.create({
     root:{
@@ -31,9 +32,38 @@ export const styles=StyleSheet.create({
         marginHorizontal:20,
         marginVertical:50
     },
-    HeaderHome: {
+    Header: {
         flexDirection: 'row',
         gap:15,
         alignItems:'center'
+    },
+    icon:{
+        alignItems:'flex-end',
+        flex:1
+    },
+    modal:{
+        padding:20,
+        marginHorizontal:20,
+        backgroundColor: '#fff',
+        borderRadius:10,
+        gap:10
+    },
+    rootListProduct:{
+        marginTop:10,
+        flexDirection:'row',
+        padding:10,
+        alignItems:'center',
+        gap:20
+    },
+    fabProduct:{
+        position:'absolute',
+        bottom:20,
+        right:15
+
+    },
+    rootInputsProduct:{
+        flexDirection:'row', 
+        gap:35
+
     }
 })
