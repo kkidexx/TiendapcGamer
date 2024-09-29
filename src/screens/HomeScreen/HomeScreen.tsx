@@ -1,101 +1,100 @@
-import React, { useEffect, useState } from 'react'
-import { View } from 'react-native'
-import { Avatar, Button, Divider, FAB, IconButton, Modal, Portal, Text, TextInput } from 'react-native-paper'
-import { styles } from '../../theme/styles'
-import { auth } from '../../config/firebaseConfig';
-import firebase, { updateProfile } from '@firebase/auth';
+import React, { useEffect, useState } from 'react';
+import { View } from 'react-native';
+import { Avatar, Button, Divider, FAB, IconButton, Modal, Portal, Text, TextInput } from 'react-native-paper';
+import { styles } from '../../theme/styles';
+import { auth, dbRealTime } from '../../config/firebaseConfig'; // Asegúrate de tener configurado firebaseConfig correctamente
+import { signOut, updateProfile } from 'firebase/auth'; // Corregir importación
 import { FlatList } from 'react-native-gesture-handler';
-import { Item } from 'react-native-paper/lib/typescript/components/Drawer/Drawer';
 import { ProductCardComponent } from './components/ProductCardComponent';
 import { NewProductComponent } from './components/NewProductComponent';
+import { onValue, ref } from 'firebase/database'; // Importar correctamente la base de datos en tiempo real
+import { CommonActions, useNavigation } from '@react-navigation/native';
 
 // Interface para formUser
 interface FormUser {
   name: string;
 }
-//interface -Product
-interface Product{
-  id:string;
+
+// Interface Product
+export interface Product {
+  id: string;
   code: string;
   nameProduct: string;
   price: number;
   stock: number;
-  descripcion: string;
-  
+  description: string;
 }
 
 export const HomeScreen = () => {
+  const navigation = useNavigation();
 
-  // Hook useState: cambiar el estado del formulario
+  // Hook useState para cambiar el estado del formulario
   const [formUser, setFormUser] = useState<FormUser>({
-    name: ""
+    name: ''
   });
 
-  //hook usestate: capturar y modificar la data del usuario autetnicado
-  const [userData, setUserData] = useState<firebase.User | null>(null)
+  // Hook useState para capturar y modificar la data del usuario autenticado
+  const [userData, setUserData] = useState(auth.currentUser); // Corregido
 
+  // Hook useState para gestionar la lista de productos
+  const [products, setProducts] = useState<Product[]>([]);
 
-  //hook usestate: gestionar la lista de productos
-  const [products, setproducts] = useState<Product[]>([
-    {
-      id:'1',
-       code:'23d43f', 
-       nameProduct:'Teclado',
-        price: 70, 
-        stock:10,
-         descripcion: 'Teclado Gamer 70% gaming'
-        },
-        {
-          id:'2',
-           code:'54gdg4', 
-           nameProduct:'Mause',
-            price: 40, 
-            stock:10,
-             descripcion: 'Logitech G305 LigthStick'
-            },
-    
+  // Hook useState para controlar la visibilidad del modal
+  const [showModalProfile, setShowModalProfile] = useState<boolean>(false);
 
+  // Hook useState para permitir que el modal de producto se visualice o no
+  const [showModaProduct, setShowModaProduct] = useState<boolean>(false);
 
-
-  ]);
-
-  // Hook useState: controlar la visibilidad del modal
-  const [showModalProfile, setShowModalProfile] = useState<boolean>(false); // Cambié a false por defecto, ya que típicamente el modal no está visible al iniciar
-
-
-  //hook usestate: permirir que el modal de suario se viulize o no
-  const [showModaProduct, setshowModaProduct] = useState<boolean>(false)
-
-
-
-
-  // Hook useEffect: validar el estado de autenticación
+  // Hook useEffect para validar el estado de autenticación
   useEffect(() => {
-    setUserData(auth.currentUser); // obtiene informacion usuario autenticado
-    setFormUser({name: auth.currentUser?.displayName ?? ''})
-   
+    setUserData(auth.currentUser); // Obtener información del usuario autenticado
+    setFormUser({ name: auth.currentUser?.displayName ?? '' });
+    getAllProducts();
   }, []);
 
-  //funcion: actuañlizar el estado del formulario
-  const handleSetValues=(key: string, value: string)=>{
-    setFormUser({...formUser, [key]: value})
+  // Función para actualizar el estado del formulario
+  const handleSetValues = (key: string, value: string) => {
+    setFormUser({ ...formUser, [key]: value });
+  };
 
-  }
-
-  //funcion: actualizar la imformacion del usuario autentificado
-  const handleUpdateUser= async() => {
+  // Función para actualizar la información del usuario autenticado
+  const handleUpdateUser = async () => {
     try {
-    await updateProfile(userData!,
-      {displayName: formUser.name});
-      
-    }catch(e){
+      if (userData) {
+        await updateProfile(userData, { displayName: formUser.name });
+      }
+    } catch (e) {
       console.log(e);
-      
     }
-    //ocultar modal
-    setShowModalProfile(false);
-  }
+    setShowModalProfile(false); // Ocultar modal
+  };
 
+  // Función para obtener los productos y listarlos
+  const getAllProducts = () => {
+    const dbRef = ref(dbRealTime, 'products/' + auth.currentUser?.uid);
+    onValue(dbRef, (snapshot) => {
+      const data = snapshot.val();
+      //VERIFICAR QUE EXISTE DATA
+      if(!data) return;
+      const getKeys = data ? Object.keys(data) : [];
+      const listProduct: Product[] = getKeys.map((key) => ({
+        ...data[key],
+        id: key,
+      }));
+      setProducts(listProduct); // Actualizar la data obtenida
+    });
+  };
+
+  // Función para cerrar sesión
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'Login' }] }));
+      setShowModalProfile(false);
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   return (
     <>
@@ -117,47 +116,55 @@ export const HomeScreen = () => {
         </View>
         <View>
           <FlatList
-          data={products}
-          renderItem={({item})=> <ProductCardComponent />}
-          keyExtractor={item => item.id}
+            data={products}
+            renderItem={({ item }) => <ProductCardComponent product={item} />} // Corregido
+            keyExtractor={item => item.id}
           />
-      </View>
+        </View>
       </View>
 
       <Portal>
-        <Modal visible={showModalProfile}  contentContainerStyle={styles.modal}>
+        <Modal visible={showModalProfile} contentContainerStyle={styles.modal}>
           <View style={styles.Header}>
-          <Text variant='headlineSmall'>Mi perfil</Text>
-          <View style={styles.icon}>
-          <IconButton
-            icon="close-outline"
-            size={40}
-            onPress={() => setShowModalProfile(false)}
-          />
-          </View>
+            <Text variant='headlineSmall'>Mi perfil</Text>
+            <View style={styles.icon}>
+              <IconButton
+                icon="close-outline"
+                size={40}
+                onPress={() => setShowModalProfile(false)}
+              />
+            </View>
           </View>
           <Divider />
           <TextInput
-            mode='outlined' 
+            mode='outlined'
             label='Nombre'
             value={formUser.name}
-            onChangeText={(value)=>handleSetValues('name', value)}
+            onChangeText={(value) => handleSetValues('name', value)}
           />
           <TextInput
-            mode='outlined' 
+            mode='outlined'
             label='Correo'
             disabled
-            value={userData?.email!}
+            value={userData?.email || ''} // Corregido
           />
-          <Button mode='contained' onPress={handleUpdateUser}>Actualizar</Button> 
+          <Button mode='contained' onPress={handleUpdateUser}>Actualizar</Button>
+          <View style={styles.iconSignOut}>
+            <IconButton
+              icon='logout'
+              size={35}
+              mode='contained'
+              onPress={handleSignOut}
+            />
+          </View>
         </Modal>
       </Portal>
       <FAB
-      icon="plus"
-      style={styles.fabProduct}
-      onPress={() => setshowModaProduct(true)}
-    />
-    <NewProductComponent showModaProduct={showModaProduct} setshowModaProduct={setshowModaProduct}/>
+        icon="plus"
+        style={styles.fabProduct}
+        onPress={() => setShowModaProduct(true)}
+      />
+      <NewProductComponent showModaProduct={showModaProduct} setshowModaProduct={setShowModaProduct} />
     </>
   );
-}
+};

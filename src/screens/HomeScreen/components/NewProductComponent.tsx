@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Divider, IconButton, Modal, Portal, Snackbar, Text, TextInput } from 'react-native-paper';
 import { styles } from '../../../theme/styles';
 import { View } from 'react-native';
-import { dbRealTime } from '../../../config/firebaseConfig';
+import { auth, dbRealTime } from '../../../config/firebaseConfig';
 import { push, ref, set } from 'firebase/database';
 
 // Interface - Props
@@ -62,7 +62,7 @@ export const NewProductComponent = ({ showModaProduct, setshowModaProduct }: Pro
 
         //console.log(formProduct);
         //1 crear crear o redifreccionar la tabla de la base de datos
-        const dbRef =ref (dbRealTime, 'products');
+        const dbRef =ref (dbRealTime, 'products/' + auth.currentUser?.uid);
         //2 crear una coleccion que agregue los datos en la dbRef
         const saveProduct = push(dbRef);
         //3 almacenar los datos en la base de datos

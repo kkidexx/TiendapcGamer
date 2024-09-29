@@ -8,6 +8,7 @@ import { auth } from '../config/firebaseConfig';
 import { View } from 'react-native';
 import { ActivityIndicator } from 'react-native-paper';
 import { styles } from '../theme/styles';
+import { DetailProductsScreen } from '../screens/HomeScreen/DetailProductsScreen';
 
 
 
@@ -15,18 +16,18 @@ import { styles } from '../theme/styles';
 interface Routes{
     name:string;
     screen: () => JSX.Element; // compoenete React
+    headerShow?: boolean; //propiedad opcional
 }
 
 //arreglo - routes cuando el usuario no este autenticado
 const routesNoAuth: Routes[] = [
     {name: 'Login', screen: LoginScreen},
-    {name: 'Register', screen: RegisterScreens}
+    {name: 'Register', screen: RegisterScreens},
+    {name: 'Home', screen: HomeScreen},
+    {name: 'Detalle', screen: DetailProductsScreen, headerShow: true}
+  
 ];
 
-//arreglo - routes cuando el usuario  este autenticado
-const routesAuth: Routes []=[{
-    name: 'Home', screen: HomeScreen
-}];
 
 
 const Stack = createStackNavigator();
@@ -68,26 +69,17 @@ export const StackNavigator = () => {
         <ActivityIndicator animating={true} size={35} />
     </View>
     ):(
-    <Stack.Navigator>
+    <Stack.Navigator initialRouteName={isAuth ? 'Home' : 'Login'}>
         {
 
-            !isAuth ?
-            routesNoAuth.map((item, index)=>(
-                <Stack.Screen key={index}
-                name={item.name} 
-                options={{headerShown: false}} 
-                component={item.screen} />
-            ))
-            :
-            routesAuth.map((item,index)=>(
+            routesNoAuth.map((item,index)=>(
               <Stack.Screen key={index}
                 name={item.name} 
-                options={{headerShown: false}} 
+                options={{headerShown: item.headerShow ?? false}} 
                 component={item.screen} />
 
               ))
         }
-      {/*<Stack.Screen name="Register" options={{headerShown: false}} component={RegisterScreens} />*/}
     </Stack.Navigator>
     )}
 
